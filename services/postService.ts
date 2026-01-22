@@ -3,8 +3,9 @@ import { Post, User, Comment, Badge } from '../types';
 
 const STORAGE_KEY = 'forumhub_posts';
 const BOOKMARKS_KEY = 'forumhub_bookmarks';
+const USER_KEY = 'forumhub_current_user';
 
-const CURRENT_USER: User = {
+const DEFAULT_USER: User = {
   id: 'u-current',
   name: 'Alex Rivers',
   username: 'alex_rivers',
@@ -58,6 +59,18 @@ const INITIAL_POSTS: Post[] = [
 ];
 
 export const postService = {
+  getCurrentUser: (): User => {
+    const stored = localStorage.getItem(USER_KEY);
+    return stored ? JSON.parse(stored) : DEFAULT_USER;
+  },
+
+  updateCurrentUser: (userData: Partial<User>): User => {
+    const current = postService.getCurrentUser();
+    const updated = { ...current, ...userData };
+    localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
   getPosts: (): Post[] => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
@@ -70,7 +83,7 @@ export const postService = {
   getUsers: (): User[] => {
     const posts = postService.getPosts();
     const authors = posts.map(p => p.author);
-    const allUsers = [...MOCK_USERS, ...authors, CURRENT_USER];
+    const allUsers = [...MOCK_USERS, ...authors, postService.getCurrentUser()];
     return Array.from(new Map(allUsers.map(u => [u.id, u])).values());
   },
 
@@ -151,7 +164,7 @@ export const postService = {
       id: Date.now().toString(),
       title: data.title,
       body: data.body,
-      author: CURRENT_USER,
+      author: postService.getCurrentUser(),
       category: data.category as any || 'General',
       tags: data.tags,
       upvotes: 1,
@@ -175,7 +188,7 @@ export const postService = {
     if (postIndex === -1) return null;
     const newComment: Comment = {
       id: `c-${Date.now()}`,
-      author: CURRENT_USER,
+      author: postService.getCurrentUser(),
       body: text,
       timestamp: 'Just now',
       upvotes: 0,
@@ -193,7 +206,7 @@ export const postService = {
     if (postIndex === -1) return null;
     const newReply: Comment = {
       id: `r-${Date.now()}`,
-      author: CURRENT_USER,
+      author: postService.getCurrentUser(),
       body: text,
       timestamp: 'Just now',
       upvotes: 0,
