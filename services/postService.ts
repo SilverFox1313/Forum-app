@@ -16,22 +16,70 @@ const CURRENT_USER: User = {
   solutionsCount: 3
 };
 
+const MOCK_USERS: User[] = [
+  {
+    id: 's1',
+    name: 'Sarah Chen',
+    username: 'sarah_dev',
+    avatar: 'https://picsum.photos/seed/sarah/150/150',
+    role: 'Engineering',
+    reputation: 12400,
+    joinedAt: 'Jan 2022',
+    postsCount: 45,
+    solutionsCount: 12
+  },
+  {
+    id: 'a1',
+    name: 'Alex Rivera',
+    username: 'arivera',
+    avatar: 'https://picsum.photos/seed/arivera/150/150',
+    role: 'Design',
+    reputation: 8500,
+    joinedAt: 'Oct 2021',
+    postsCount: 1248,
+    solutionsCount: 42
+  },
+  {
+    id: 'm1',
+    name: 'Marcus Thorne',
+    username: 'mthorne',
+    avatar: 'https://picsum.photos/seed/marcus/150/150',
+    role: 'Performance',
+    reputation: 5200,
+    joinedAt: 'Mar 2023',
+    postsCount: 89,
+    solutionsCount: 15
+  },
+  {
+    id: 'f1',
+    name: 'Felix Wang',
+    username: 'felix_w',
+    avatar: 'https://picsum.photos/seed/felix/150/150',
+    role: 'Engineering',
+    reputation: 3800,
+    joinedAt: 'Jun 2023',
+    postsCount: 34,
+    solutionsCount: 8
+  },
+  {
+    id: 'e1',
+    name: 'Elena Belova',
+    username: 'ebelova',
+    avatar: 'https://picsum.photos/seed/elena/150/150',
+    role: 'Design',
+    reputation: 7100,
+    joinedAt: 'Aug 2022',
+    postsCount: 112,
+    solutionsCount: 22
+  }
+];
+
 const INITIAL_POSTS: Post[] = [
   {
-    id: '1740000000001', // Newer ID
+    id: '1740000000001',
     title: 'How to scale React applications for enterprise use?',
     body: 'Exploring architecture patterns like micro-frontends, state management performance, and code-splitting strategies for large teams. I am looking for real-world experience on how to handle 50+ engineers working on the same codebase.',
-    author: {
-      id: 's1',
-      name: 'Sarah Chen',
-      username: 'sarah_dev',
-      avatar: 'https://picsum.photos/seed/sarah/50/50',
-      role: 'Engineering',
-      reputation: 1200,
-      joinedAt: '2022-01-01',
-      postsCount: 45,
-      solutionsCount: 12
-    },
+    author: MOCK_USERS[0],
     category: 'Engineering',
     tags: ['react', 'enterprise', 'architecture'],
     upvotes: 1242,
@@ -50,20 +98,10 @@ const INITIAL_POSTS: Post[] = [
     ]
   },
   {
-    id: '1740000000000', // Older ID
+    id: '1740000000000',
     title: 'Modern UI design patterns for 2024',
     body: 'Diving deep into the return of skeuomorphism, the refinement of bento grids, and high-density information displays. What do you think about the "Linear" style spreading across SaaS apps?',
-    author: {
-      id: 'a1',
-      name: 'Alex Rivera',
-      username: 'arivera',
-      avatar: 'https://picsum.photos/seed/alex/50/50',
-      role: 'Design',
-      reputation: 8500,
-      joinedAt: '2021-10-01',
-      postsCount: 1248,
-      solutionsCount: 42
-    },
+    author: MOCK_USERS[1],
     category: 'Design',
     tags: ['ui-ux', 'trends', 'design'],
     upvotes: 856,
@@ -82,6 +120,17 @@ export const postService = {
       return INITIAL_POSTS;
     }
     return JSON.parse(stored);
+  },
+
+  getUsers: (): User[] => {
+    const posts = postService.getPosts();
+    const authors = posts.map(p => p.author);
+    
+    // Combine mock users and authors, removing duplicates by ID
+    const allUsers = [...MOCK_USERS, ...authors, CURRENT_USER];
+    const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values());
+    
+    return uniqueUsers;
   },
 
   createPost: (data: { title: string; body: string; category: string; tags: string[] }): Post => {
