@@ -4,25 +4,47 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Post } from '../types';
 import { postService } from '../services/postService';
 
+type TabType = 'trending' | 'new' | 'following';
+
 const FeedPage: React.FC = () => {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q');
+  const [activeTab, setActiveTab] = useState<TabType>('trending');
 
   useEffect(() => {
     setAllPosts(postService.getPosts());
   }, []);
 
   const filteredPosts = useMemo(() => {
-    if (!query) return allPosts;
-    const q = query.toLowerCase();
-    return allPosts.filter(post => 
-      post.title.toLowerCase().includes(q) ||
-      post.body.toLowerCase().includes(q) ||
-      post.category.toLowerCase().includes(q) ||
-      post.tags.some(tag => tag.toLowerCase().includes(q))
-    );
-  }, [allPosts, query]);
+    let posts = [...allPosts];
+    
+    // 1. Filter by search query if exists
+    if (query) {
+      const q = query.toLowerCase();
+      posts = posts.filter(post => 
+        post.title.toLowerCase().includes(q) ||
+        post.body.toLowerCase().includes(q) ||
+        post.category.toLowerCase().includes(q) ||
+        post.tags.some(tag => tag.toLowerCase().includes(q))
+      );
+    }
+
+    // 2. Sort based on active tab
+    if (activeTab === 'trending') {
+      posts.sort((a, b) => b.upvotes - a.upvotes);
+    } else if (activeTab === 'new') {
+      // Sort by ID descending (newer posts have numeric timestamp IDs)
+      posts.sort((a, b) => {
+        const idA = parseInt(a.id) || 0;
+        const idB = parseInt(b.id) || 0;
+        return idB - idA;
+      });
+    }
+    // 'following' would normally filter by user follows, here we keep default for demo
+    
+    return posts;
+  }, [allPosts, query, activeTab]);
 
   return (
     <div className="max-w-[1200px] mx-auto w-full">
@@ -31,15 +53,28 @@ const FeedPage: React.FC = () => {
         <div className="flex-1">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-border-dark mb-6">
             <div className="flex gap-6">
-              <button className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 ${!query ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`}>
-                <span className="text-sm font-bold tracking-wide">{query ? 'Search Results' : 'Trending'}</span>
-              </button>
-              {!query && (
+              {query ? (
+                <div className="flex flex-col items-center justify-center border-b-2 border-primary pb-3 pt-2 text-primary">
+                  <span className="text-sm font-bold tracking-wide">Search Results</span>
+                </div>
+              ) : (
                 <>
-                  <button className="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors">
+                  <button 
+                    onClick={() => setActiveTab('trending')}
+                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${activeTab === 'trending' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  >
+                    <span className="text-sm font-bold tracking-wide">Trending</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('new')}
+                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${activeTab === 'new' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  >
                     <span className="text-sm font-bold tracking-wide">New</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors">
+                  <button 
+                    onClick={() => setActiveTab('following')}
+                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${activeTab === 'following' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  >
                     <span className="text-sm font-bold tracking-wide">Following</span>
                   </button>
                 </>
@@ -51,7 +86,7 @@ const FeedPage: React.FC = () => {
                 Clear Search
               </Link>
             )}
-            <Link to="/create" className="lg:hidden flex items-center justify-center size-9 bg-primary text-white rounded-lg">
+            <Link to="/create" className="lg:hidden flex items-center justify-center size-9 bg-primary text-white rounded-lg shadow-md">
               <span className="material-symbols-outlined">add</span>
             </Link>
           </div>
