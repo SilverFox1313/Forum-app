@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,17 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Immediate Theme Injection -->
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            const isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+            document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        })();
+    </script>
+
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -35,6 +46,23 @@
         ::-webkit-scrollbar-track { background: #101922; }
         ::-webkit-scrollbar-thumb { background: #283039; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #3f4a56; }
+        
+        /* The Secret to No Blinking: Transitions ONLY during the switch */
+        .theme-transitioning,
+        .theme-transitioning *,
+        .theme-transitioning *::before,
+        .theme-transitioning *::after {
+            transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important,
+                        border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important,
+                        color 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important,
+                        fill 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important,
+                        stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        /* Prevent initial transition on page load */
+        html:not(.theme-transitioning) * {
+            transition: none !important;
+        }
     </style>
 <script type="importmap">
 {

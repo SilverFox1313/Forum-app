@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 interface LayoutProps {
@@ -11,6 +11,43 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const toggleTimeoutRef = useRef<number | null>(null);
+  
+  // Theme management initialized from direct check to sync with head script
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
+    } else {
+      root.classList.remove('dark');
+      root.style.colorScheme = 'light';
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const root = window.document.documentElement;
+    
+    // Enable transitions specifically for this action
+    root.classList.add('theme-transitioning');
+    
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+    // Clean up timeout if user spams the button
+    if (toggleTimeoutRef.current) window.clearTimeout(toggleTimeoutRef.current);
+
+    // Remove the transition class after animation finishes (300ms)
+    toggleTimeoutRef.current = window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, 350);
+  };
 
   const navItems = [
     { name: 'Home', path: '/', icon: 'home' },
@@ -25,7 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Sync state with URL changes (e.g. back button or clearing search)
+  // Sync state with URL changes
   useEffect(() => {
     setSearchQuery(searchParams.get('q') || '');
   }, [searchParams]);
@@ -34,20 +71,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const value = e.target.value;
     setSearchQuery(value);
     
-    // Update the URL immediately for live filtering
     if (value.trim()) {
-      // If we are not on the home/feed page, redirect there to show results
       const basePath = location.pathname === '/trending' || location.pathname === '/bookmarks' ? location.pathname : '/';
       navigate(`${basePath}?q=${encodeURIComponent(value.trim())}`, { replace: true });
     } else {
       navigate(location.pathname, { replace: true });
-      // If we want to clear and go home:
       if (!value) navigate('/', { replace: true });
     }
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent page reload on Enter
+    e.preventDefault(); 
   };
 
   return (
@@ -56,10 +90,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <aside className="hidden lg:flex w-64 border-r border-slate-200 dark:border-border-dark flex-col fixed h-full bg-white dark:bg-background-dark z-20">
         <div className="p-6 flex items-center gap-3">
           <Link to="/" className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
+            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
               <span className="material-symbols-outlined text-white">forum</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">ForumHub</h1>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">ForumHub</h1>
           </Link>
         </div>
 
@@ -68,7 +102,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
                 isActive(item.path)
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -84,7 +118,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
                 isActive(item.path)
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -96,7 +130,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ))}
           
           <div className="pt-4 pb-2 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Account</div>
-          <Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200">
             <span className="material-symbols-outlined">settings</span>
             Settings
           </Link>
@@ -119,13 +153,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <input
               type="text"
               placeholder="Search discussions..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm text-slate-900 dark:text-slate-100"
               value={searchQuery}
               onChange={handleSearchChange}
             />
           </form>
 
           <div className="flex items-center gap-2 lg:gap-4 ml-4">
+            {/* Theme Toggle Button */}
+            <button 
+              onClick={toggleTheme}
+              className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all group"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              <span className={`material-symbols-outlined transition-transform duration-300 ${theme === 'dark' ? 'text-yellow-400 rotate-180' : 'text-slate-600 -rotate-12'}`}>
+                {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+              </span>
+            </button>
+
             <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full relative">
               <span className="material-symbols-outlined">notifications</span>
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
@@ -133,7 +178,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="h-8 w-[1px] bg-slate-200 dark:bg-border-dark hidden sm:block"></div>
             <Link to="/profile" className="flex items-center gap-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-semibold">Alex Rivers</p>
+                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">Alex Rivers</p>
                 <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Pro Contributor</p>
               </div>
               <div className="h-9 w-9 rounded-full bg-slate-200 overflow-hidden border border-slate-300 dark:border-border-dark">
@@ -151,9 +196,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <footer className="mt-auto py-8 border-t border-slate-200 dark:border-border-dark flex flex-col md:flex-row justify-between items-center text-slate-500 text-[11px] font-bold uppercase tracking-widest px-8">
           <p>© 2024 ForumHub Community.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
-            <Link to="#" className="hover:text-primary">Guidelines</Link>
-            <Link to="#" className="hover:text-primary">Privacy Policy</Link>
-            <Link to="#" className="hover:text-primary">Terms of Service</Link>
+            <Link to="#" className="hover:text-primary transition-colors duration-200">Guidelines</Link>
+            <Link to="#" className="hover:text-primary transition-colors duration-200">Privacy Policy</Link>
+            <Link to="#" className="hover:text-primary transition-colors duration-200">Terms of Service</Link>
           </div>
         </footer>
       </div>
