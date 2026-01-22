@@ -114,7 +114,7 @@ export const postService = {
     if (postIndex === -1) return null;
 
     const newComment: Comment = {
-      id: Date.now().toString(),
+      id: `c-${Date.now()}`,
       author: CURRENT_USER,
       body: text,
       timestamp: 'Just now',
@@ -123,9 +123,57 @@ export const postService = {
     };
 
     posts[postIndex].comments.push(newComment);
-    posts[postIndex].commentsCount = posts[postIndex].comments.length;
+    posts[postIndex].commentsCount = postService.calculateTotalComments(posts[postIndex].comments);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
     return newComment;
+  },
+
+  addReply: (postId: string, parentCommentId: string, text: string): Comment | null => {
+    const posts = postService.getPosts();
+    const postIndex = posts.findIndex(p => p.id === postId);
+    if (postIndex === -1) return null;
+
+    const newReply: Comment = {
+      id: `r-${Date.now()}`,
+      author: CURRENT_USER,
+      body: text,
+      timestamp: 'Just now',
+      upvotes: 0,
+      replies: []
+    };
+
+    const addReplyRecursively = (comments: Comment[]): boolean => {
+      for (const comment of comments) {
+        if (comment.id === parentCommentId) {
+          comment.replies.push(newReply);
+          return true;
+        }
+        if (comment.replies.length > 0) {
+          if (addReplyRecursively(comment.replies)) return true;
+        }
+      }
+      return false;
+    };
+
+    const success = addReplyRecursively(posts[postIndex].comments);
+    if (success) {
+      posts[postIndex].commentsCount = postService.calculateTotalComments(posts[postIndex].comments);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+      return newReply;
+    }
+    return null;
+  },
+
+  calculateTotalComments: (comments: Comment[]): number => {
+    let total = 0;
+    const count = (list: Comment[]) => {
+      total += list.length;
+      list.forEach(c => {
+        if (c.replies.length > 0) count(c.replies);
+      });
+    };
+    count(comments);
+    return total;
   },
 
   upvotePost: (postId: string, delta: number): number => {

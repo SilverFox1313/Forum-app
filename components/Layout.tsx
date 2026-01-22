@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,7 +8,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
-  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   const navItems = [
     { name: 'Home', path: '/', icon: 'home' },
@@ -23,15 +25,42 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // Sync state with URL changes (e.g. back button or clearing search)
+  useEffect(() => {
+    setSearchQuery(searchParams.get('q') || '');
+  }, [searchParams]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    // Update the URL immediately for live filtering
+    if (value.trim()) {
+      // If we are not on the home/feed page, redirect there to show results
+      const basePath = location.pathname === '/trending' || location.pathname === '/bookmarks' ? location.pathname : '/';
+      navigate(`${basePath}?q=${encodeURIComponent(value.trim())}`, { replace: true });
+    } else {
+      navigate(location.pathname, { replace: true });
+      // If we want to clear and go home:
+      if (!value) navigate('/', { replace: true });
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent page reload on Enter
+  };
+
   return (
     <div className="flex min-h-screen bg-background-light dark:bg-background-dark">
       {/* Sidebar */}
       <aside className="hidden lg:flex w-64 border-r border-slate-200 dark:border-border-dark flex-col fixed h-full bg-white dark:bg-background-dark z-20">
         <div className="p-6 flex items-center gap-3">
-          <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="material-symbols-outlined text-white">forum</span>
-          </div>
-          <h1 className="text-xl font-bold tracking-tight">ForumHub</h1>
+          <Link to="/" className="flex items-center gap-3">
+            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="material-symbols-outlined text-white">forum</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">ForumHub</h1>
+          </Link>
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
@@ -85,16 +114,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
         {/* Top Navbar */}
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-border-dark px-4 lg:px-8 py-3 flex items-center justify-between">
-          <div className="relative w-full max-w-md">
+          <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
             <input
               type="text"
-              placeholder="Search discussions, users, or tags..."
+              placeholder="Search discussions..."
               className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm transition-all"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
             />
-          </div>
+          </form>
 
           <div className="flex items-center gap-2 lg:gap-4 ml-4">
             <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full relative">

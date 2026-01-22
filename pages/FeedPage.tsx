@@ -1,15 +1,28 @@
 
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Post } from '../types';
 import { postService } from '../services/postService';
 
 const FeedPage: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [searchParams] = useSearchParams();
+  const query = searchParams.get('q');
 
   useEffect(() => {
-    setPosts(postService.getPosts());
+    setAllPosts(postService.getPosts());
   }, []);
+
+  const filteredPosts = useMemo(() => {
+    if (!query) return allPosts;
+    const q = query.toLowerCase();
+    return allPosts.filter(post => 
+      post.title.toLowerCase().includes(q) ||
+      post.body.toLowerCase().includes(q) ||
+      post.category.toLowerCase().includes(q) ||
+      post.tags.some(tag => tag.toLowerCase().includes(q))
+    );
+  }, [allPosts, query]);
 
   return (
     <div className="max-w-[1200px] mx-auto w-full">
@@ -18,23 +31,33 @@ const FeedPage: React.FC = () => {
         <div className="flex-1">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-border-dark mb-6">
             <div className="flex gap-6">
-              <button className="flex flex-col items-center justify-center border-b-2 border-primary text-primary pb-3 pt-2">
-                <span className="text-sm font-bold tracking-wide">Trending</span>
+              <button className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 ${!query ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`}>
+                <span className="text-sm font-bold tracking-wide">{query ? 'Search Results' : 'Trending'}</span>
               </button>
-              <button className="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors">
-                <span className="text-sm font-bold tracking-wide">New</span>
-              </button>
-              <button className="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors">
-                <span className="text-sm font-bold tracking-wide">Following</span>
-              </button>
+              {!query && (
+                <>
+                  <button className="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors">
+                    <span className="text-sm font-bold tracking-wide">New</span>
+                  </button>
+                  <button className="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors">
+                    <span className="text-sm font-bold tracking-wide">Following</span>
+                  </button>
+                </>
+              )}
             </div>
+            {query && (
+              <Link to="/" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">close</span>
+                Clear Search
+              </Link>
+            )}
             <Link to="/create" className="lg:hidden flex items-center justify-center size-9 bg-primary text-white rounded-lg">
               <span className="material-symbols-outlined">add</span>
             </Link>
           </div>
 
           <div className="flex flex-col gap-4">
-            {posts.map(post => (
+            {filteredPosts.map(post => (
               <Link 
                 key={post.id} 
                 to={`/thread/${post.id}`}
@@ -65,10 +88,6 @@ const FeedPage: React.FC = () => {
                       <span className="material-symbols-outlined text-sm">chat_bubble</span>
                       <span>{post.commentsCount} Comments</span>
                     </div>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold uppercase tracking-wider transition-colors" onClick={(e) => e.preventDefault()}>
-                      <span className="material-symbols-outlined text-sm">share</span>
-                      <span>Share</span>
-                    </button>
                   </div>
                 </div>
 
@@ -80,60 +99,62 @@ const FeedPage: React.FC = () => {
                 )}
               </Link>
             ))}
-            {posts.length === 0 && (
-              <div className="py-20 text-center">
-                <p className="text-slate-500 font-bold uppercase tracking-widest opacity-50">No discussions found.</p>
+            {filteredPosts.length === 0 && (
+              <div className="py-20 text-center bg-white dark:bg-card-dark rounded-2xl border border-dashed border-slate-200 dark:border-border-dark">
+                <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-700 mb-4">search_off</span>
+                <p className="text-slate-500 font-bold uppercase tracking-widest">No discussions match your search.</p>
+                <button 
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.delete('q');
+                    window.location.search = params.toString();
+                  }}
+                  className="mt-4 text-primary text-xs font-black uppercase tracking-widest hover:underline"
+                >
+                  Try clearing your search
+                </button>
               </div>
             )}
           </div>
 
-          <div className="mt-8 flex justify-center">
-            <button className="px-6 py-2 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs uppercase tracking-widest transition-colors">
-              Load more discussions
-            </button>
-          </div>
+          {!query && filteredPosts.length > 0 && (
+            <div className="mt-8 flex justify-center">
+              <button className="px-6 py-2 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs uppercase tracking-widest transition-colors">
+                Load more discussions
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
         <aside className="hidden lg:flex flex-col gap-6 w-[320px]">
-          <div className="p-5 rounded-xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark">
+          <div className="p-5 rounded-xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark shadow-sm">
             <h4 className="text-[11px] font-black mb-4 uppercase tracking-[0.1em] text-slate-500">Community Stats</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-2xl font-black">{12.4 + (posts.length * 0.001).toFixed(1)}k</p>
+                <p className="text-2xl font-black">{12.4 + (allPosts.length * 0.001).toFixed(1)}k</p>
                 <p className="text-[10px] uppercase font-bold text-slate-500">Members</p>
               </div>
               <div>
-                <p className="text-2xl font-black">{posts.length}</p>
+                <p className="text-2xl font-black">{allPosts.length}</p>
                 <p className="text-[10px] uppercase font-bold text-slate-500">Total Posts</p>
               </div>
             </div>
           </div>
 
-          <div className="p-5 rounded-xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark">
+          <div className="p-5 rounded-xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark shadow-sm">
             <h4 className="text-[11px] font-black mb-4 uppercase tracking-[0.1em] text-slate-500">Trending Topics</h4>
             <div className="flex flex-wrap gap-2">
               {['#ReactJS', '#UIDesign', '#Wasm', '#Productivity', '#AI', '#Frontend'].map(tag => (
                 <Link 
                   key={tag} 
-                  to="#" 
+                  to={`/?q=${tag.replace('#', '')}`} 
                   className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors"
                 >
                   {tag}
                 </Link>
               ))}
             </div>
-          </div>
-
-          <div className="p-5 rounded-xl bg-primary/5 border border-primary/20">
-            <div className="flex items-center gap-2 mb-2 text-primary">
-              <span className="material-symbols-outlined text-xl">verified_user</span>
-              <h4 className="text-xs font-black uppercase tracking-widest">Forum Rules</h4>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-              Share your expertise, ask meaningful questions, and support others in their learning journey.
-            </p>
-            <button className="mt-3 text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Read Guidelines →</button>
           </div>
         </aside>
       </div>
