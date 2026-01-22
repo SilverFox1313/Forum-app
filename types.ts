@@ -69,3 +69,14 @@ export interface Badge {
     target: number;
   };
 }
+
+export interface Notification {
+  id: string;
+  type: 'reply' | 'upvote' | 'badge' | 'mention' | 'system';
+  title: string;
+  message: string;
+  timestamp: string;
+  isRead: boolean;
+  link: string;
+  avatar?: string;
+}

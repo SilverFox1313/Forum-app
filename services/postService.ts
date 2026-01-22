@@ -1,9 +1,10 @@
 
-import { Post, User, Comment, Badge } from '../types';
+import { Post, User, Comment, Badge, Notification } from '../types';
 
 const STORAGE_KEY = 'forumhub_posts';
 const BOOKMARKS_KEY = 'forumhub_bookmarks';
 const USER_KEY = 'forumhub_current_user';
+const NOTIFICATIONS_KEY = 'forumhub_notifications';
 
 const DEFAULT_USER: User = {
   id: 'u-current',
@@ -42,6 +43,37 @@ const MOCK_USERS: User[] = [
   }
 ];
 
+const INITIAL_NOTIFICATIONS: Notification[] = [
+  {
+    id: 'n1',
+    type: 'reply',
+    title: 'New Reply',
+    message: 'Sarah Chen replied to your thread "Scaling React Apps"',
+    timestamp: '2m ago',
+    isRead: false,
+    link: '/thread/1740000000001',
+    avatar: 'https://picsum.photos/seed/sarah/40/40'
+  },
+  {
+    id: 'n2',
+    type: 'badge',
+    title: 'Badge Earned',
+    message: 'You unlocked the "Rising Star" achievement!',
+    timestamp: '1h ago',
+    isRead: false,
+    link: '/badges'
+  },
+  {
+    id: 'n3',
+    type: 'upvote',
+    title: 'Post Upvoted',
+    message: 'Your post received 50 new upvotes today.',
+    timestamp: '5h ago',
+    isRead: true,
+    link: '/profile'
+  }
+];
+
 const INITIAL_POSTS: Post[] = [
   {
     id: '1740000000001',
@@ -69,6 +101,47 @@ export const postService = {
     const updated = { ...current, ...userData };
     localStorage.setItem(USER_KEY, JSON.stringify(updated));
     return updated;
+  },
+
+  getNotifications: (): Notification[] => {
+    const stored = localStorage.getItem(NOTIFICATIONS_KEY);
+    if (!stored) {
+      localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
+      return INITIAL_NOTIFICATIONS;
+    }
+    return JSON.parse(stored);
+  },
+
+  markNotificationAsRead: (id: string): Notification[] => {
+    const notifications = postService.getNotifications();
+    const updated = notifications.map(n => n.id === id ? { ...n, isRead: true } : n);
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
+  markAllAsRead: (): Notification[] => {
+    const notifications = postService.getNotifications();
+    const updated = notifications.map(n => ({ ...n, isRead: true }));
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
+  clearNotifications: (): Notification[] => {
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify([]));
+    return [];
+  },
+
+  addNotification: (notif: Omit<Notification, 'id' | 'timestamp' | 'isRead'>): Notification => {
+    const notifications = postService.getNotifications();
+    const newNotif: Notification = {
+      ...notif,
+      id: `n-${Date.now()}`,
+      timestamp: 'Just now',
+      isRead: false
+    };
+    const updated = [newNotif, ...notifications];
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    return newNotif;
   },
 
   getPosts: (): Post[] => {
