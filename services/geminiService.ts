@@ -2,13 +2,20 @@
 import { GoogleGenAI } from "@google/genai";
 
 export class GeminiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const apiKey = process.env.API_KEY;
+    if (apiKey) {
+      this.ai = new GoogleGenAI({ apiKey });
+    } else {
+      console.warn("Gemini API Key is missing. AI features will be disabled.");
+    }
   }
 
   async searchCommunity(query: string) {
+    if (!this.ai) return { text: "AI service not configured.", sources: [] };
+    
     try {
       const response = await this.ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -29,6 +36,8 @@ export class GeminiService {
   }
 
   async suggestTags(title: string, content: string) {
+    if (!this.ai) return [];
+    
     try {
       const response = await this.ai.models.generateContent({
         model: "gemini-3-flash-preview",
