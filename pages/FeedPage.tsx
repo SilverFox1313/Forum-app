@@ -4,7 +4,7 @@ import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { Post } from '../types';
 import { postService } from '../services/postService';
 
-type TabType = 'trending' | 'new' | 'bookmarks';
+type ViewType = 'home' | 'trending' | 'bookmarks';
 
 const FeedPage: React.FC = () => {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
@@ -13,27 +13,17 @@ const FeedPage: React.FC = () => {
   const location = useLocation();
   const query = searchParams.get('q');
   
-  const [activeTab, setActiveTab] = useState<TabType>(() => {
+  // Determine view based on URL path
+  const currentView = useMemo<ViewType>(() => {
     if (location.pathname === '/trending') return 'trending';
     if (location.pathname === '/bookmarks') return 'bookmarks';
-    // Default to 'new' to show newest posts first
-    return 'new';
-  });
+    return 'home';
+  }, [location.pathname]);
 
   useEffect(() => {
     setAllPosts(postService.getPosts());
     setBookmarkedIds(postService.getBookmarkedIds());
-  }, []);
-
-  useEffect(() => {
-    if (location.pathname === '/trending') {
-      setActiveTab('trending');
-    } else if (location.pathname === '/bookmarks') {
-      setActiveTab('bookmarks');
-    } else if (location.pathname === '/') {
-      // If we are on root, default to new unless explicitly switched (handled by initial state)
-    }
-  }, [location.pathname]);
+  }, [location.key]); // Refresh when navigating
 
   const toggleBookmark = (e: React.MouseEvent, postId: string) => {
     e.preventDefault();
@@ -45,8 +35,8 @@ const FeedPage: React.FC = () => {
   const filteredPosts = useMemo(() => {
     let posts = [...allPosts];
     
-    // 1. Filter by bookmarks if active tab is bookmarks
-    if (activeTab === 'bookmarks') {
+    // 1. Filter by bookmarks if active view is bookmarks
+    if (currentView === 'bookmarks') {
       posts = posts.filter(post => bookmarkedIds.includes(post.id));
     }
 
@@ -61,11 +51,12 @@ const FeedPage: React.FC = () => {
       );
     }
 
-    // 3. Sort based on active tab
-    if (activeTab === 'trending') {
+    // 3. Sort based on current view
+    if (currentView === 'trending') {
+      // Trending: Sort by highest upvotes
       posts.sort((a, b) => b.upvotes - a.upvotes);
-    } else if (activeTab === 'new') {
-      // Sort by ID descending (newer posts have higher numeric IDs)
+    } else {
+      // Home & Bookmarks (default): Sort by newest first
       posts.sort((a, b) => {
         const idA = parseFloat(a.id) || 0;
         const idB = parseFloat(b.id) || 0;
@@ -74,7 +65,7 @@ const FeedPage: React.FC = () => {
     }
     
     return posts;
-  }, [allPosts, query, activeTab, bookmarkedIds]);
+  }, [allPosts, query, currentView, bookmarkedIds]);
 
   const trendingTopics = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -92,7 +83,7 @@ const FeedPage: React.FC = () => {
   }, [allPosts]);
 
   return (
-    <div className="max-w-[1200px] mx-auto w-full">
+    <div className="max-w-[1200px] mx-auto w-full animate-in fade-in duration-500">
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Main Feed */}
         <div className="flex-1">
@@ -104,24 +95,24 @@ const FeedPage: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <button 
-                    onClick={() => setActiveTab('trending')}
-                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${activeTab === 'trending' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  <Link 
+                    to="/"
+                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${currentView === 'home' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  >
+                    <span className="text-sm font-bold tracking-wide">Home</span>
+                  </Link>
+                  <Link 
+                    to="/trending"
+                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${currentView === 'trending' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     <span className="text-sm font-bold tracking-wide">Trending</span>
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('new')}
-                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${activeTab === 'new' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                  >
-                    <span className="text-sm font-bold tracking-wide">New</span>
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('bookmarks')}
-                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${activeTab === 'bookmarks' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  </Link>
+                  <Link 
+                    to="/bookmarks"
+                    className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 transition-all ${currentView === 'bookmarks' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     <span className="text-sm font-bold tracking-wide">Bookmarks</span>
-                  </button>
+                  </Link>
                 </>
               )}
             </div>
@@ -199,27 +190,19 @@ const FeedPage: React.FC = () => {
             {filteredPosts.length === 0 && (
               <div className="py-20 text-center bg-white dark:bg-card-dark rounded-2xl border border-dashed border-slate-200 dark:border-border-dark px-6">
                 <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-700 mb-4">
-                  {activeTab === 'bookmarks' ? 'bookmark_border' : 'search_off'}
+                  {currentView === 'bookmarks' ? 'bookmark_border' : 'search_off'}
                 </span>
                 <p className="text-slate-500 font-bold uppercase tracking-widest">
-                  {activeTab === 'bookmarks' 
+                  {currentView === 'bookmarks' 
                     ? "You haven't bookmarked any discussions yet." 
                     : "No discussions match your criteria."}
                 </p>
-                <button 
-                  onClick={() => {
-                    if (activeTab === 'bookmarks') {
-                      setActiveTab('new');
-                    } else {
-                      const params = new URLSearchParams(searchParams);
-                      params.delete('q');
-                      window.location.search = params.toString();
-                    }
-                  }}
-                  className="mt-4 text-primary text-xs font-black uppercase tracking-widest hover:underline"
+                <Link 
+                  to="/"
+                  className="mt-4 inline-block text-primary text-xs font-black uppercase tracking-widest hover:underline"
                 >
-                  {activeTab === 'bookmarks' ? "Explore New Discussions" : "Reset filters"}
-                </button>
+                  Explore Home Discussions
+                </Link>
               </div>
             )}
           </div>
