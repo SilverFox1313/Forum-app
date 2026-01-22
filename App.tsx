@@ -8,6 +8,7 @@ import ThreadPage from './pages/ThreadPage';
 import ProfilePage from './pages/ProfilePage';
 import CreateThreadPage from './pages/CreateThreadPage';
 import MembersPage from './pages/MembersPage';
+import BadgesPage from './pages/BadgesPage';
 
 const App: React.FC = () => {
   return (
@@ -19,7 +20,7 @@ const App: React.FC = () => {
           <Route path="/bookmarks" element={<FeedPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/members" element={<MembersPage />} />
-          <Route path="/badges" element={<div className="p-8 text-center font-black uppercase tracking-widest opacity-50">Badges Dashboard Coming Soon</div>} />
+          <Route path="/badges" element={<BadgesPage />} />
           <Route path="/settings" element={<div className="p-8 text-center font-black uppercase tracking-widest opacity-50">Account Settings Coming Soon</div>} />
           <Route path="/thread/:id" element={<ThreadPage />} />
           <Route path="/profile" element={<ProfilePage />} />

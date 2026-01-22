@@ -55,3 +55,17 @@ export interface Category {
     avatar: string;
   };
 }
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'Engagement' | 'Expertise' | 'Social' | 'Special';
+  rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
+  isEarned: boolean;
+  progress?: {
+    current: number;
+    target: number;
+  };
+}

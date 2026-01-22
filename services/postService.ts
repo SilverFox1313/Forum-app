@@ -1,5 +1,5 @@
 
-import { Post, User, Comment } from '../types';
+import { Post, User, Comment, Badge } from '../types';
 
 const STORAGE_KEY = 'forumhub_posts';
 const BOOKMARKS_KEY = 'forumhub_bookmarks';
@@ -38,39 +38,6 @@ const MOCK_USERS: User[] = [
     joinedAt: 'Oct 2021',
     postsCount: 1248,
     solutionsCount: 42
-  },
-  {
-    id: 'm1',
-    name: 'Marcus Thorne',
-    username: 'mthorne',
-    avatar: 'https://picsum.photos/seed/marcus/150/150',
-    role: 'Performance',
-    reputation: 5200,
-    joinedAt: 'Mar 2023',
-    postsCount: 89,
-    solutionsCount: 15
-  },
-  {
-    id: 'f1',
-    name: 'Felix Wang',
-    username: 'felix_w',
-    avatar: 'https://picsum.photos/seed/felix/150/150',
-    role: 'Engineering',
-    reputation: 3800,
-    joinedAt: 'Jun 2023',
-    postsCount: 34,
-    solutionsCount: 8
-  },
-  {
-    id: 'e1',
-    name: 'Elena Belova',
-    username: 'ebelova',
-    avatar: 'https://picsum.photos/seed/elena/150/150',
-    role: 'Design',
-    reputation: 7100,
-    joinedAt: 'Aug 2022',
-    postsCount: 112,
-    solutionsCount: 22
   }
 ];
 
@@ -78,7 +45,7 @@ const INITIAL_POSTS: Post[] = [
   {
     id: '1740000000001',
     title: 'How to scale React applications for enterprise use?',
-    body: 'Exploring architecture patterns like micro-frontends, state management performance, and code-splitting strategies for large teams. I am looking for real-world experience on how to handle 50+ engineers working on the same codebase.',
+    body: 'Exploring architecture patterns like micro-frontends, state management performance, and code-splitting strategies for large teams.',
     author: MOCK_USERS[0],
     category: 'Engineering',
     tags: ['react', 'enterprise', 'architecture'],
@@ -86,28 +53,6 @@ const INITIAL_POSTS: Post[] = [
     commentsCount: 1,
     timestamp: '2 hours ago',
     thumbnail: 'https://picsum.photos/seed/tech1/320/180',
-    comments: [
-      {
-        id: 'c1',
-        author: { id: 'u1', name: 'Markus T.', username: 'mt_dev', avatar: 'https://picsum.photos/seed/markus/40/40' } as any,
-        body: 'In our experience, Module Federation has been the key. It allows teams to deploy independently without breaking the shell app.',
-        timestamp: '1h ago',
-        upvotes: 12,
-        replies: []
-      }
-    ]
-  },
-  {
-    id: '1740000000000',
-    title: 'Modern UI design patterns for 2024',
-    body: 'Diving deep into the return of skeuomorphism, the refinement of bento grids, and high-density information displays. What do you think about the "Linear" style spreading across SaaS apps?',
-    author: MOCK_USERS[1],
-    category: 'Design',
-    tags: ['ui-ux', 'trends', 'design'],
-    upvotes: 856,
-    commentsCount: 0,
-    timestamp: '5 hours ago',
-    thumbnail: 'https://picsum.photos/seed/design1/320/180',
     comments: []
   }
 ];
@@ -125,12 +70,79 @@ export const postService = {
   getUsers: (): User[] => {
     const posts = postService.getPosts();
     const authors = posts.map(p => p.author);
-    
-    // Combine mock users and authors, removing duplicates by ID
     const allUsers = [...MOCK_USERS, ...authors, CURRENT_USER];
-    const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values());
-    
-    return uniqueUsers;
+    return Array.from(new Map(allUsers.map(u => [u.id, u])).values());
+  },
+
+  getBadges: (): Badge[] => {
+    return [
+      {
+        id: 'b1',
+        name: 'First Word',
+        description: 'Publish your first discussion thread in the community.',
+        icon: 'edit_note',
+        category: 'Engagement',
+        rarity: 'Common',
+        isEarned: true
+      },
+      {
+        id: 'b2',
+        name: 'Problem Solver',
+        description: 'Get 5 comments marked as the solution by authors.',
+        icon: 'task_alt',
+        category: 'Expertise',
+        rarity: 'Rare',
+        isEarned: false,
+        progress: { current: 3, target: 5 }
+      },
+      {
+        id: 'b3',
+        name: 'Rising Star',
+        description: 'Reach a reputation score of 1,000.',
+        icon: 'auto_awesome',
+        category: 'Engagement',
+        rarity: 'Epic',
+        isEarned: true
+      },
+      {
+        id: 'b4',
+        name: 'Code Mentor',
+        description: 'Provide 50 high-quality answers in the Engineering category.',
+        icon: 'psychology',
+        category: 'Expertise',
+        rarity: 'Legendary',
+        isEarned: false,
+        progress: { current: 12, target: 50 }
+      },
+      {
+        id: 'b5',
+        name: 'Networker',
+        description: 'Connect with 10 different community members.',
+        icon: 'diversity_3',
+        category: 'Social',
+        rarity: 'Common',
+        isEarned: true
+      },
+      {
+        id: 'b6',
+        name: 'Beta Tester',
+        description: 'Joined during the early access phase of ForumHub.',
+        icon: 'bug_report',
+        category: 'Special',
+        rarity: 'Rare',
+        isEarned: true
+      },
+      {
+        id: 'b7',
+        name: 'Pixel Perfect',
+        description: 'Earn 100 upvotes in the Design category.',
+        icon: 'palette',
+        category: 'Expertise',
+        rarity: 'Epic',
+        isEarned: false,
+        progress: { current: 45, target: 100 }
+      }
+    ];
   },
 
   createPost: (data: { title: string; body: string; category: string; tags: string[] }): Post => {
@@ -148,7 +160,6 @@ export const postService = {
       thumbnail: `https://picsum.photos/seed/${Date.now()}/320/180`,
       comments: []
     };
-    
     const updatedPosts = [newPost, ...posts];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPosts));
     return newPost;
@@ -162,7 +173,6 @@ export const postService = {
     const posts = postService.getPosts();
     const postIndex = posts.findIndex(p => p.id === postId);
     if (postIndex === -1) return null;
-
     const newComment: Comment = {
       id: `c-${Date.now()}`,
       author: CURRENT_USER,
@@ -171,7 +181,6 @@ export const postService = {
       upvotes: 0,
       replies: []
     };
-
     posts[postIndex].comments.push(newComment);
     posts[postIndex].commentsCount = postService.calculateTotalComments(posts[postIndex].comments);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
@@ -182,7 +191,6 @@ export const postService = {
     const posts = postService.getPosts();
     const postIndex = posts.findIndex(p => p.id === postId);
     if (postIndex === -1) return null;
-
     const newReply: Comment = {
       id: `r-${Date.now()}`,
       author: CURRENT_USER,
@@ -191,7 +199,6 @@ export const postService = {
       upvotes: 0,
       replies: []
     };
-
     const addReplyRecursively = (comments: Comment[]): boolean => {
       for (const comment of comments) {
         if (comment.id === parentCommentId) {
@@ -204,9 +211,7 @@ export const postService = {
       }
       return false;
     };
-
-    const success = addReplyRecursively(posts[postIndex].comments);
-    if (success) {
+    if (addReplyRecursively(posts[postIndex].comments)) {
       posts[postIndex].commentsCount = postService.calculateTotalComments(posts[postIndex].comments);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
       return newReply;
@@ -218,9 +223,7 @@ export const postService = {
     let total = 0;
     const count = (list: Comment[]) => {
       total += list.length;
-      list.forEach(c => {
-        if (c.replies.length > 0) count(c.replies);
-      });
+      list.forEach(c => { if (c.replies.length > 0) count(c.replies); });
     };
     count(comments);
     return total;
@@ -230,7 +233,6 @@ export const postService = {
     const posts = postService.getPosts();
     const postIndex = posts.findIndex(p => p.id === postId);
     if (postIndex === -1) return 0;
-
     posts[postIndex].upvotes += delta;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
     return posts[postIndex].upvotes;
