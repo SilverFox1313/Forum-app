@@ -16,7 +16,8 @@ const FeedPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     if (location.pathname === '/trending') return 'trending';
     if (location.pathname === '/bookmarks') return 'bookmarks';
-    return 'trending';
+    // Default to 'new' to show newest posts first
+    return 'new';
   });
 
   useEffect(() => {
@@ -29,6 +30,8 @@ const FeedPage: React.FC = () => {
       setActiveTab('trending');
     } else if (location.pathname === '/bookmarks') {
       setActiveTab('bookmarks');
+    } else if (location.pathname === '/') {
+      // If we are on root, default to new unless explicitly switched (handled by initial state)
     }
   }, [location.pathname]);
 
@@ -62,9 +65,10 @@ const FeedPage: React.FC = () => {
     if (activeTab === 'trending') {
       posts.sort((a, b) => b.upvotes - a.upvotes);
     } else if (activeTab === 'new') {
+      // Sort by ID descending (newer posts have higher numeric IDs)
       posts.sort((a, b) => {
-        const idA = parseInt(a.id) || 0;
-        const idB = parseInt(b.id) || 0;
+        const idA = parseFloat(a.id) || 0;
+        const idB = parseFloat(b.id) || 0;
         return idB - idA;
       });
     }
@@ -205,7 +209,7 @@ const FeedPage: React.FC = () => {
                 <button 
                   onClick={() => {
                     if (activeTab === 'bookmarks') {
-                      setActiveTab('trending');
+                      setActiveTab('new');
                     } else {
                       const params = new URLSearchParams(searchParams);
                       params.delete('q');
@@ -214,7 +218,7 @@ const FeedPage: React.FC = () => {
                   }}
                   className="mt-4 text-primary text-xs font-black uppercase tracking-widest hover:underline"
                 >
-                  {activeTab === 'bookmarks' ? "Explore Trending" : "Reset filters"}
+                  {activeTab === 'bookmarks' ? "Explore New Discussions" : "Reset filters"}
                 </button>
               </div>
             )}

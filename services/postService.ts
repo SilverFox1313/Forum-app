@@ -18,7 +18,7 @@ const CURRENT_USER: User = {
 
 const INITIAL_POSTS: Post[] = [
   {
-    id: '1',
+    id: '1740000000001', // Newer ID
     title: 'How to scale React applications for enterprise use?',
     body: 'Exploring architecture patterns like micro-frontends, state management performance, and code-splitting strategies for large teams. I am looking for real-world experience on how to handle 50+ engineers working on the same codebase.',
     author: {
@@ -50,7 +50,7 @@ const INITIAL_POSTS: Post[] = [
     ]
   },
   {
-    id: '2',
+    id: '1740000000000', // Older ID
     title: 'Modern UI design patterns for 2024',
     body: 'Diving deep into the return of skeuomorphism, the refinement of bento grids, and high-density information displays. What do you think about the "Linear" style spreading across SaaS apps?',
     author: {
