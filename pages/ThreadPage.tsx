@@ -111,11 +111,15 @@ const ThreadPage: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null);
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
     if (id) {
       const foundPost = postService.getPostById(id);
-      if (foundPost) setPost(foundPost);
+      if (foundPost) {
+        setPost(foundPost);
+        setIsBookmarked(postService.isBookmarked(id));
+      }
     }
   }, [id]);
 
@@ -166,6 +170,12 @@ const ThreadPage: React.FC = () => {
     setPost({ ...post, upvotes: newCount });
   };
 
+  const toggleBookmark = () => {
+    if (!id) return;
+    const newState = postService.toggleBookmark(id);
+    setIsBookmarked(newState);
+  };
+
   if (!post) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -177,7 +187,7 @@ const ThreadPage: React.FC = () => {
 
   return (
     <div className="max-w-[1280px] mx-auto flex flex-col lg:flex-row gap-8">
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-0">
         <nav className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 mb-6">
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <span className="material-symbols-outlined text-xs">chevron_right</span>
@@ -229,9 +239,14 @@ const ThreadPage: React.FC = () => {
                 <span className="material-symbols-outlined text-[18px]">share</span>
                 Share
               </button>
-              <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-colors ml-auto">
-                <span className="material-symbols-outlined text-[18px]">bookmark</span>
-                Save
+              <button 
+                onClick={toggleBookmark}
+                className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors ml-auto ${isBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+              >
+                <span className={`material-symbols-outlined text-[18px] ${isBookmarked ? 'fill-1' : ''}`} style={{ fontVariationSettings: `'FILL' ${isBookmarked ? 1 : 0}` }}>
+                  bookmark
+                </span>
+                {isBookmarked ? 'Saved' : 'Save'}
               </button>
             </div>
           </div>

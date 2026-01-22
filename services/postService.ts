@@ -2,6 +2,7 @@
 import { Post, User, Comment } from '../types';
 
 const STORAGE_KEY = 'forumhub_posts';
+const BOOKMARKS_KEY = 'forumhub_bookmarks';
 
 const CURRENT_USER: User = {
   id: 'u-current',
@@ -184,5 +185,29 @@ export const postService = {
     posts[postIndex].upvotes += delta;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
     return posts[postIndex].upvotes;
+  },
+
+  getBookmarkedIds: (): string[] => {
+    const stored = localStorage.getItem(BOOKMARKS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  toggleBookmark: (postId: string): boolean => {
+    const bookmarks = postService.getBookmarkedIds();
+    const index = bookmarks.indexOf(postId);
+    let isBookmarked = false;
+    if (index === -1) {
+      bookmarks.push(postId);
+      isBookmarked = true;
+    } else {
+      bookmarks.splice(index, 1);
+      isBookmarked = false;
+    }
+    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+    return isBookmarked;
+  },
+
+  isBookmarked: (postId: string): boolean => {
+    return postService.getBookmarkedIds().includes(postId);
   }
 };
