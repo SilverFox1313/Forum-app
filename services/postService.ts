@@ -1,5 +1,5 @@
 
-import { Post, User } from '../types';
+import { Post, User, Comment } from '../types';
 
 const STORAGE_KEY = 'forumhub_posts';
 
@@ -19,7 +19,7 @@ const INITIAL_POSTS: Post[] = [
   {
     id: '1',
     title: 'How to scale React applications for enterprise use?',
-    body: 'Exploring architecture patterns like micro-frontends, state management performance, and code-splitting strategies for large teams.',
+    body: 'Exploring architecture patterns like micro-frontends, state management performance, and code-splitting strategies for large teams. I am looking for real-world experience on how to handle 50+ engineers working on the same codebase.',
     author: {
       id: 's1',
       name: 'Sarah Chen',
@@ -33,15 +33,25 @@ const INITIAL_POSTS: Post[] = [
     },
     category: 'Engineering',
     tags: ['react', 'enterprise', 'architecture'],
-    upvotes: 1200,
-    commentsCount: 45,
+    upvotes: 1242,
+    commentsCount: 1,
     timestamp: '2 hours ago',
-    thumbnail: 'https://picsum.photos/seed/tech1/320/180'
+    thumbnail: 'https://picsum.photos/seed/tech1/320/180',
+    comments: [
+      {
+        id: 'c1',
+        author: { id: 'u1', name: 'Markus T.', username: 'mt_dev', avatar: 'https://picsum.photos/seed/markus/40/40' } as any,
+        body: 'In our experience, Module Federation has been the key. It allows teams to deploy independently without breaking the shell app.',
+        timestamp: '1h ago',
+        upvotes: 12,
+        replies: []
+      }
+    ]
   },
   {
     id: '2',
     title: 'Modern UI design patterns for 2024',
-    body: 'Diving deep into the return of skeuomorphism, the refinement of bento grids, and high-density information displays.',
+    body: 'Diving deep into the return of skeuomorphism, the refinement of bento grids, and high-density information displays. What do you think about the "Linear" style spreading across SaaS apps?',
     author: {
       id: 'a1',
       name: 'Alex Rivera',
@@ -56,9 +66,10 @@ const INITIAL_POSTS: Post[] = [
     category: 'Design',
     tags: ['ui-ux', 'trends', 'design'],
     upvotes: 856,
-    commentsCount: 128,
+    commentsCount: 0,
     timestamp: '5 hours ago',
-    thumbnail: 'https://picsum.photos/seed/design1/320/180'
+    thumbnail: 'https://picsum.photos/seed/design1/320/180',
+    comments: []
   }
 ];
 
@@ -84,7 +95,8 @@ export const postService = {
       upvotes: 1,
       commentsCount: 0,
       timestamp: 'Just now',
-      thumbnail: `https://picsum.photos/seed/${Date.now()}/320/180`
+      thumbnail: `https://picsum.photos/seed/${Date.now()}/320/180`,
+      comments: []
     };
     
     const updatedPosts = [newPost, ...posts];
@@ -94,5 +106,35 @@ export const postService = {
 
   getPostById: (id: string): Post | undefined => {
     return postService.getPosts().find(p => p.id === id);
+  },
+
+  addComment: (postId: string, text: string): Comment | null => {
+    const posts = postService.getPosts();
+    const postIndex = posts.findIndex(p => p.id === postId);
+    if (postIndex === -1) return null;
+
+    const newComment: Comment = {
+      id: Date.now().toString(),
+      author: CURRENT_USER,
+      body: text,
+      timestamp: 'Just now',
+      upvotes: 0,
+      replies: []
+    };
+
+    posts[postIndex].comments.push(newComment);
+    posts[postIndex].commentsCount = posts[postIndex].comments.length;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+    return newComment;
+  },
+
+  upvotePost: (postId: string, delta: number): number => {
+    const posts = postService.getPosts();
+    const postIndex = posts.findIndex(p => p.id === postId);
+    if (postIndex === -1) return 0;
+
+    posts[postIndex].upvotes += delta;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+    return posts[postIndex].upvotes;
   }
 };

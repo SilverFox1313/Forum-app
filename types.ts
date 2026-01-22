@@ -36,6 +36,7 @@ export interface Post {
   commentsCount: number;
   timestamp: string;
   thumbnail?: string;
+  comments: Comment[];
 }
 
 export interface Category {
