@@ -1,56 +1,16 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Post } from '../types';
-
-const MOCK_POSTS: Post[] = [
-  {
-    id: '1',
-    title: 'How to scale React applications for enterprise use?',
-    body: 'Exploring architecture patterns like micro-frontends, state management performance, and code-splitting strategies for large teams.',
-    author: {
-      id: 's1',
-      name: 'Sarah Chen',
-      username: 'sarah_dev',
-      avatar: 'https://picsum.photos/seed/sarah/50/50',
-      role: 'Engineering',
-      reputation: 1200,
-      joinedAt: '2022-01-01',
-      postsCount: 45,
-      solutionsCount: 12
-    },
-    category: 'Engineering',
-    tags: ['react', 'enterprise', 'architecture'],
-    upvotes: 1200,
-    commentsCount: 45,
-    timestamp: '2 hours ago',
-    thumbnail: 'https://picsum.photos/seed/tech1/320/180'
-  },
-  {
-    id: '2',
-    title: 'Modern UI design patterns for 2024',
-    body: 'Diving deep into the return of skeuomorphism, the refinement of bento grids, and high-density information displays.',
-    author: {
-      id: 'a1',
-      name: 'Alex Rivera',
-      username: 'arivera',
-      avatar: 'https://picsum.photos/seed/alex/50/50',
-      role: 'Design',
-      reputation: 8500,
-      joinedAt: '2021-10-01',
-      postsCount: 1248,
-      solutionsCount: 42
-    },
-    category: 'Design',
-    tags: ['ui-ux', 'trends', 'design'],
-    upvotes: 856,
-    commentsCount: 128,
-    timestamp: '5 hours ago',
-    thumbnail: 'https://picsum.photos/seed/design1/320/180'
-  }
-];
+import { postService } from '../services/postService';
 
 const FeedPage: React.FC = () => {
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    setPosts(postService.getPosts());
+  }, []);
+
   return (
     <div className="max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col lg:flex-row gap-8">
@@ -74,18 +34,18 @@ const FeedPage: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-4">
-            {MOCK_POSTS.map(post => (
+            {posts.map(post => (
               <Link 
                 key={post.id} 
                 to={`/thread/${post.id}`}
                 className="group flex items-start gap-4 p-4 rounded-xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/40 shadow-sm transition-all"
               >
                 <div className="flex flex-col items-center gap-1 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-1 min-w-[44px]">
-                  <button className="hover:text-primary transition-colors">
+                  <button className="hover:text-primary transition-colors" onClick={(e) => e.preventDefault()}>
                     <span className="material-symbols-outlined">expand_less</span>
                   </button>
                   <span className="text-xs font-bold">{post.upvotes > 999 ? (post.upvotes/1000).toFixed(1) + 'k' : post.upvotes}</span>
-                  <button className="hover:text-red-500 transition-colors">
+                  <button className="hover:text-red-500 transition-colors" onClick={(e) => e.preventDefault()}>
                     <span className="material-symbols-outlined">expand_more</span>
                   </button>
                 </div>
@@ -105,7 +65,7 @@ const FeedPage: React.FC = () => {
                       <span className="material-symbols-outlined text-sm">chat_bubble</span>
                       <span>{post.commentsCount} Comments</span>
                     </div>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold uppercase tracking-wider transition-colors">
+                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold uppercase tracking-wider transition-colors" onClick={(e) => e.preventDefault()}>
                       <span className="material-symbols-outlined text-sm">share</span>
                       <span>Share</span>
                     </button>
@@ -120,6 +80,11 @@ const FeedPage: React.FC = () => {
                 )}
               </Link>
             ))}
+            {posts.length === 0 && (
+              <div className="py-20 text-center">
+                <p className="text-slate-500 font-bold uppercase tracking-widest opacity-50">No discussions found.</p>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 flex justify-center">
@@ -135,12 +100,12 @@ const FeedPage: React.FC = () => {
             <h4 className="text-[11px] font-black mb-4 uppercase tracking-[0.1em] text-slate-500">Community Stats</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-2xl font-black">12.4k</p>
+                <p className="text-2xl font-black">{12.4 + (posts.length * 0.001).toFixed(1)}k</p>
                 <p className="text-[10px] uppercase font-bold text-slate-500">Members</p>
               </div>
               <div>
-                <p className="text-2xl font-black">1.5k</p>
-                <p className="text-[10px] uppercase font-bold text-slate-500">Daily Posts</p>
+                <p className="text-2xl font-black">{posts.length}</p>
+                <p className="text-[10px] uppercase font-bold text-slate-500">Total Posts</p>
               </div>
             </div>
           </div>
