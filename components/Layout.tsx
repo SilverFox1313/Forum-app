@@ -5,6 +5,7 @@ import { Notification } from '../types';
 import { postService } from '../services/postService';
 
 interface LayoutProps {
+  // Fixed: React.Node is not a valid exported member of React. Replaced with React.ReactNode.
   children: React.ReactNode;
 }
 
@@ -14,6 +15,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const toggleTimeoutRef = useRef<number | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Theme management
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -51,6 +53,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close sidebar on navigation
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   const toggleTheme = () => {
     const root = window.document.documentElement;
@@ -110,18 +117,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="flex min-h-screen bg-background-light dark:bg-background-dark">
-      {/* Sidebar */}
-      <aside className="hidden lg:flex w-64 border-r border-slate-200 dark:border-border-dark flex-col fixed h-full bg-white dark:bg-background-dark z-20">
-        <div className="p-6 flex items-center gap-3">
+      {/* Mobile Drawer Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Sidebar (Desktop & Mobile Drawer) */}
+      <aside className={`fixed inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-border-dark flex flex-col bg-white dark:bg-background-dark z-50 transform transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
               <span className="material-symbols-outlined text-white">forum</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">ForumHub</h1>
           </Link>
+          <button className="lg:hidden p-1 text-slate-500" onClick={() => setIsSidebarOpen(false)}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1">
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
           {navItems.map(item => (
             <Link
               key={item.path}
@@ -160,7 +178,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Link>
         </nav>
 
-        <div className="p-4 mt-auto">
+        <div className="p-4 mt-auto border-t border-slate-100 dark:border-border-dark lg:border-none">
           <Link to="/create" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20">
             <span className="material-symbols-outlined text-sm">add</span>
             Start Discussion
@@ -169,20 +187,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen relative pb-16 lg:pb-0">
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-border-dark px-4 lg:px-8 py-3 flex items-center justify-between">
-          <form className="relative w-full max-w-md">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
-            <input
-              type="text"
-              placeholder="Search discussions..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm text-slate-900 dark:text-slate-100"
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-          </form>
+          <div className="flex items-center gap-2 lg:gap-0">
+            <button 
+              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+            <form className="relative w-full max-w-[200px] sm:max-w-md hidden sm:block">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm text-slate-900 dark:text-slate-100"
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
+            </form>
+          </div>
 
-          <div className="flex items-center gap-2 lg:gap-4 ml-4">
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
             <button 
               onClick={toggleTheme}
               className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all"
@@ -212,45 +238,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="p-4 border-b border-slate-100 dark:border-border-dark flex items-center justify-between">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Notifications</h3>
                     <div className="flex gap-3">
-                      <button 
-                        onClick={handleMarkAllRead}
-                        className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline"
-                      >
-                        Mark all as read
-                      </button>
-                      <button 
-                        onClick={handleClearNotifications}
-                        className="text-[9px] font-black uppercase tracking-widest text-red-500 hover:underline"
-                      >
-                        Clear
-                      </button>
+                      <button onClick={handleMarkAllRead} className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline">Mark all</button>
+                      <button onClick={handleClearNotifications} className="text-[9px] font-black uppercase tracking-widest text-red-500 hover:underline">Clear</button>
                     </div>
                   </div>
-                  
                   <div className="max-h-[400px] overflow-y-auto divide-y divide-slate-100 dark:divide-border-dark">
                     {notifications.length > 0 ? (
                       notifications.map(n => (
-                        <Link 
-                          key={n.id}
-                          to={n.link}
-                          onClick={() => { handleMarkAsRead(n.id); setShowNotifications(false); }}
-                          className={`flex items-start gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.isRead ? 'bg-primary/5 dark:bg-primary/10' : ''}`}
-                        >
+                        <Link key={n.id} to={n.link} onClick={() => { handleMarkAsRead(n.id); setShowNotifications(false); }} className={`flex items-start gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.isRead ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                           <div className="shrink-0 pt-1">
-                            {n.avatar ? (
-                              <img src={n.avatar} alt="" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm" />
-                            ) : (
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${n.type === 'badge' ? 'bg-amber-100 text-amber-500' : 'bg-primary/10 text-primary'}`}>
-                                <span className="material-symbols-outlined text-xl">
-                                  {n.type === 'badge' ? 'workspace_premium' : n.type === 'upvote' ? 'thumb_up' : n.type === 'mention' ? 'alternate_email' : 'notifications'}
-                                </span>
-                              </div>
-                            )}
+                            {n.avatar ? <img src={n.avatar} alt="" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm" /> : <div className={`w-10 h-10 rounded-full flex items-center justify-center ${n.type === 'badge' ? 'bg-amber-100 text-amber-500' : 'bg-primary/10 text-primary'}`}><span className="material-symbols-outlined text-xl">{n.type === 'badge' ? 'workspace_premium' : n.type === 'upvote' ? 'thumb_up' : n.type === 'mention' ? 'alternate_email' : 'notifications'}</span></div>}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${!n.isRead ? 'font-black text-slate-900 dark:text-white' : 'font-medium text-slate-600 dark:text-slate-400'}`}>
-                              {n.message}
-                            </p>
+                            <p className={`text-sm ${!n.isRead ? 'font-black text-slate-900 dark:text-white' : 'font-medium text-slate-600 dark:text-slate-400'}`}>{n.message}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{n.timestamp}</p>
                           </div>
                           {!n.isRead && <div className="w-2 h-2 bg-primary rounded-full mt-2 shrink-0"></div>}
@@ -259,7 +259,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     ) : (
                       <div className="py-12 text-center text-slate-400">
                         <span className="material-symbols-outlined text-4xl mb-2 opacity-20">notifications_off</span>
-                        <p className="text-[10px] font-black uppercase tracking-widest">No notifications yet</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest">No notifications</p>
                       </div>
                     )}
                   </div>
@@ -267,7 +267,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               )}
             </div>
 
-            <div className="h-8 w-[1px] bg-slate-200 dark:bg-border-dark hidden sm:block"></div>
             <Link to="/profile" className="flex items-center gap-3 pl-2">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">Alex Rivers</p>
@@ -284,14 +283,39 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </main>
 
-        <footer className="mt-auto py-8 border-t border-slate-200 dark:border-border-dark flex flex-col md:flex-row justify-between items-center text-slate-500 text-[11px] font-bold uppercase tracking-widest px-8">
+        <footer className="mt-auto py-8 border-t border-slate-200 dark:border-border-dark flex flex-col md:flex-row justify-between items-center text-slate-500 text-[11px] font-bold uppercase tracking-widest px-8 mb-4 lg:mb-0">
           <p>© 2024 ForumHub Community.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
-            <Link to="#" className="hover:text-primary transition-colors duration-200">Guidelines</Link>
-            <Link to="#" className="hover:text-primary transition-colors duration-200">Privacy Policy</Link>
-            <Link to="#" className="hover:text-primary transition-colors duration-200">Terms of Service</Link>
+            <Link to="#" className="hover:text-primary transition-colors">Guidelines</Link>
+            <Link to="#" className="hover:text-primary transition-colors">Privacy</Link>
+            <Link to="#" className="hover:text-primary transition-colors">Terms</Link>
           </div>
         </footer>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t border-slate-200 dark:border-border-dark flex justify-around items-center h-16 px-4 z-40">
+          <Link to="/" className={`flex flex-col items-center gap-1 ${isActive('/') ? 'text-primary' : 'text-slate-400'}`}>
+            <span className="material-symbols-outlined">home</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Home</span>
+          </Link>
+          <Link to="/trending" className={`flex flex-col items-center gap-1 ${isActive('/trending') ? 'text-primary' : 'text-slate-400'}`}>
+            <span className="material-symbols-outlined">trending_up</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Trending</span>
+          </Link>
+          <Link to="/create" className="flex flex-col items-center -mt-8">
+            <div className="size-12 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 border-4 border-white dark:border-background-dark">
+              <span className="material-symbols-outlined">add</span>
+            </div>
+          </Link>
+          <Link to="/bookmarks" className={`flex flex-col items-center gap-1 ${isActive('/bookmarks') ? 'text-primary' : 'text-slate-400'}`}>
+            <span className="material-symbols-outlined">bookmark</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Saved</span>
+          </Link>
+          <Link to="/profile" className={`flex flex-col items-center gap-1 ${isActive('/profile') ? 'text-primary' : 'text-slate-400'}`}>
+            <span className="material-symbols-outlined">person</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Profile</span>
+          </Link>
+        </nav>
       </div>
     </div>
   );
